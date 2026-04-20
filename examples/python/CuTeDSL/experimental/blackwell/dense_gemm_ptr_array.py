@@ -37,6 +37,8 @@ from cutlass.base_dsl.typing import Numeric
 from cutlass import cute as cute
 from cutlass import utils
 from cutlass import torch as cutlass_torch
+from cutlass.cute.experimental.host_runtime import QueryDeviceWorkspaceFunc
+from cutlass.cute.runtime import from_dlpack
 import cutlass.utils.blackwell_helpers as sm100_utils
 
 import cutlass.cute.testing as testing
@@ -674,7 +676,15 @@ def run(
     compiled_dense_gemm = cute_ext.compile(
         ptr_array_dense_gemm, a_tensor, b_tensor, d_tensor
     )
-    compiled_dense_gemm(a_tensor, b_tensor, d_tensor)
+
+    query = compiled_dense_gemm.get_aux_func(
+        QueryDeviceWorkspaceFunc, kernel=ptr_array_dense_gemm.kernel
+    )
+    req = query(a_tensor, b_tensor, d_tensor)
+    workspace = torch.empty(req.size_in_bytes, dtype=torch.uint8, device="cuda")
+    workspace_cute = from_dlpack(workspace)
+
+    compiled_dense_gemm(a_tensor, b_tensor, d_tensor, workspace_cute)
 
     if not skip_ref_check:
         for batch_idx in range(l):
@@ -704,7 +714,10 @@ def run(
         ) = create_tensors_for_ptr_array(
             l, m, n, k, a_major, b_major, d_major, ab_dtype, d_dtype
         )
-        args = testing.JitArguments(a_tensor, b_tensor, d_tensor)
+        ws = torch.empty(req.size_in_bytes, dtype=torch.uint8, device="cuda")
+        ws_cute = from_dlpack(ws)
+
+        args = testing.JitArguments(a_tensor, b_tensor, d_tensor, ws_cute)
         args.add_to_scope([A_cutes, B_cutes, D_cutes])
         return args
 
