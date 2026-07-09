@@ -617,14 +617,6 @@ struct tuple_element<I, cute::array_subbyte<T,N>>
 namespace std
 {
 
-#if defined(__CUDACC_RTC__)
-  template <class _Tp>
-  struct tuple_size;
-
-  template <size_t _Ip, class _Tp>
-  struct tuple_element;
-#endif
-
 template <class T, size_t N>
 struct tuple_size<cute::array_subbyte<T,N>>
     : CUTE_STL_NAMESPACE::integral_constant<size_t, N>

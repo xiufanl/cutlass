@@ -110,6 +110,12 @@
 #  define CUTE_STL_NAMESPACE std
 #endif
 
+#if defined(__CUDACC_RTC__)
+// Use CCCL's public tuple entry point so std tuple protocol declarations
+// follow the layout provided by the active CCCL version.
+#  include <cuda/std/tuple>
+#endif
+
 //
 // Assertion helpers
 //

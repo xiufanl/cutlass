@@ -513,14 +513,6 @@ struct tuple_element<I, cute::ArithmeticTuple<T...>>
 namespace std
 {
 
-#if defined(__CUDACC_RTC__)
-  template <class _Tp>
-  struct tuple_size;
-
-  template <size_t _Ip, class _Tp>
-  struct tuple_element;
-#endif
-
 template <class... T>
 struct tuple_size<cute::ArithmeticTuple<T...>>
   : CUTE_STL_NAMESPACE::integral_constant<size_t, sizeof...(T)>
