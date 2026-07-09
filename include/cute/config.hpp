@@ -123,10 +123,10 @@
 #    if !__has_include(<cuda/std/__tuple_dir/structured_bindings.h>) && \
         (!__has_include(<cuda/std/__tuple_dir/tuple_size.h>) || \
          !__has_include(<cuda/std/__tuple_dir/tuple_element.h>))
-#      define CUTE_CUDA_STD_NEEDS_TUPLE_FORWARD_DECLARATIONS
+#      define CUTE_CUDA_STD_NEEDS_TUPLE_PRIMARY_DECLARATIONS
 #    endif
 #  elif (__CUDACC_VER_MAJOR__ < 13)
-#    define CUTE_CUDA_STD_NEEDS_TUPLE_FORWARD_DECLARATIONS
+#    define CUTE_CUDA_STD_NEEDS_TUPLE_PRIMARY_DECLARATIONS
 #  endif
 #endif
 

@@ -447,7 +447,7 @@ struct tuple_element<I, cute::array<T,N>>
 namespace std
 {
 
-#if defined(CUTE_CUDA_STD_NEEDS_TUPLE_FORWARD_DECLARATIONS)
+#if defined(CUTE_CUDA_STD_NEEDS_TUPLE_PRIMARY_DECLARATIONS)
 template <class _Tp>
 struct tuple_size;
 
