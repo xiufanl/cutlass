@@ -701,6 +701,14 @@ struct tuple_element<I, cute::tuple<T...>>
 namespace std
 {
 
+#if defined(CUTE_CUDA_STD_NEEDS_TUPLE_FORWARD_DECLARATIONS)
+template <class _Tp>
+struct tuple_size;
+
+template <size_t _Ip, class _Tp>
+struct tuple_element;
+#endif
+
 template <class... T>
 struct tuple_size<cute::tuple<T...>>
     : CUTE_STL_NAMESPACE::integral_constant<size_t, sizeof...(T)>
