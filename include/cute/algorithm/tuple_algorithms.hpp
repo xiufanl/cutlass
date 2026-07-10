@@ -73,27 +73,19 @@ struct is_integer_sequence : false_type {};
 template <class T, T... Ints>
 struct is_integer_sequence<integer_sequence<T, Ints...>> : true_type {};
 
-// Newer CCCL releases provide cuda::std::get for integer_sequence. Keep
-// tuple-like ADL for other types, but explicitly select CuTe's longstanding
-// integer_sequence overload so the two definitions do not become ambiguous.
-template <int I, class T>
-CUTE_HOST_DEVICE constexpr
-decltype(auto)
-tuple_get(T&& t)
-{
-  if constexpr (is_integer_sequence<remove_cvref_t<T>>::value) {
-    return cute::get<I>(static_cast<T&&>(t));
-  } else {
-    return get<I>(static_cast<T&&>(t));
-  }
-}
-
 template <class T, class F, int... I>
 CUTE_HOST_DEVICE constexpr
 auto
 apply(T&& t, F&& f, seq<I...>)
 {
-  return f(tuple_get<I>(static_cast<T&&>(t))...);
+  // Newer CCCL releases provide cuda::std::get for integer_sequence. Select
+  // CuTe's longstanding overload for that type, and preserve tuple-like ADL
+  // for every other type without adding a forwarding layer on older GCC.
+  if constexpr (is_integer_sequence<remove_cvref_t<T>>::value) {
+    return f(cute::get<I>(static_cast<T&&>(t))...);
+  } else {
+    return f(get<I>(static_cast<T&&>(t))...);
+  }
 }
 
 } // end namespace detail
@@ -118,7 +110,11 @@ CUTE_HOST_DEVICE constexpr
 auto
 tapply(T&& t, F&& f, G&& g, seq<I...>)
 {
-  return g(f(tuple_get<I>(static_cast<T&&>(t)))...);
+  if constexpr (is_integer_sequence<remove_cvref_t<T>>::value) {
+    return g(f(cute::get<I>(static_cast<T&&>(t)))...);
+  } else {
+    return g(f(get<I>(static_cast<T&&>(t)))...);
+  }
 }
 
 template <class T0, class T1, class F, class G, int... I>
@@ -126,8 +122,8 @@ CUTE_HOST_DEVICE constexpr
 auto
 tapply(T0&& t0, T1&& t1, F&& f, G&& g, seq<I...>)
 {
-  return g(f(tuple_get<I>(static_cast<T0&&>(t0)),
-             tuple_get<I>(static_cast<T1&&>(t1)))...);
+  return g(f(get<I>(static_cast<T0&&>(t0)),
+             get<I>(static_cast<T1&&>(t1)))...);
 }
 
 template <class T0, class T1, class T2, class F, class G, int... I>
@@ -135,9 +131,9 @@ CUTE_HOST_DEVICE constexpr
 auto
 tapply(T0&& t0, T1&& t1, T2&& t2, F&& f, G&& g, seq<I...>)
 {
-  return g(f(tuple_get<I>(static_cast<T0&&>(t0)),
-             tuple_get<I>(static_cast<T1&&>(t1)),
-             tuple_get<I>(static_cast<T2&&>(t2)))...);
+  return g(f(get<I>(static_cast<T0&&>(t0)),
+             get<I>(static_cast<T1&&>(t1)),
+             get<I>(static_cast<T2&&>(t2)))...);
 }
 
 } // end namespace detail
@@ -429,7 +425,7 @@ CUTE_HOST_DEVICE constexpr
 auto
 fold(T&& t, V const& v, F&& f, seq<Is...>)
 {
-  return (FoldAdaptor<F,V>{f,v} | ... | tuple_get<Is>(static_cast<T&&>(t))).val_;
+  return (FoldAdaptor<F,V>{f,v} | ... | get<Is>(static_cast<T&&>(t))).val_;
 }
 
 } // end namespace detail
@@ -454,10 +450,7 @@ auto
 fold_first(T&& t, F&& f)
 {
   if constexpr (is_tuple<remove_cvref_t<T>>::value) {
-    return detail::fold(static_cast<T&&>(t),
-                        detail::tuple_get<0>(t),
-                        f,
-                        make_range<1,tuple_size<remove_cvref_t<T>>::value>{});
+    return detail::fold(static_cast<T&&>(t), get<0>(t), f, make_range<1,tuple_size<remove_cvref_t<T>>::value>{});
   } else {
     return t;
   }
@@ -476,7 +469,7 @@ decltype(auto)
 front(T&& t)
 {
   if constexpr (is_tuple<remove_cvref_t<T>>::value) {
-    return front(detail::tuple_get<0>(static_cast<T&&>(t)));
+    return front(get<0>(static_cast<T&&>(t)));
   } else {
     return static_cast<T&&>(t);
   }
@@ -495,10 +488,10 @@ back(T&& t)
 
     // MSVC needs a bit of extra help here deducing return types.
     // We help it by peeling off the nonrecursive case a level "early."
-    if constexpr (! is_tuple<remove_cvref_t<decltype(detail::tuple_get<N - 1>(static_cast<T&&>(t)))>>::value) {
-      return detail::tuple_get<N - 1>(static_cast<T&&>(t));
+    if constexpr (! is_tuple<remove_cvref_t<decltype(get<N - 1>(static_cast<T&&>(t)))>>::value) {
+      return get<N - 1>(static_cast<T&&>(t));
     } else {
-      return back(detail::tuple_get<N - 1>(static_cast<T&&>(t)));
+      return back(get<N - 1>(static_cast<T&&>(t)));
     }
   } else {
     return static_cast<T&&>(t);
@@ -535,7 +528,7 @@ CUTE_HOST_DEVICE constexpr
 auto
 select(T const& t)
 {
-  return cute::make_tuple(detail::tuple_get<I>(t)...);
+  return cute::make_tuple(get<I>(t)...);
 }
 
 // Wrap non-tuples into rank-1 tuples or forward
@@ -561,7 +554,7 @@ unwrap(T const& t)
 {
   if constexpr (is_tuple<T>::value) {
     if constexpr (tuple_size<T>::value == 1) {
-      return unwrap(detail::tuple_get<0>(t));
+      return unwrap(get<0>(t));
     } else {
       return t;
     }
@@ -636,8 +629,7 @@ unflatten_impl(FlatTuple const& flat_tuple, TargetProfile const& target_profile)
       return cute::make_tuple(append(result, sub_result), sub_tuple);
     });
   } else {
-    return cute::make_tuple(detail::tuple_get<0>(flat_tuple),
-                            take<1, decltype(rank(flat_tuple))::value>(flat_tuple));
+    return cute::make_tuple(get<0>(flat_tuple), take<1, decltype(rank(flat_tuple))::value>(flat_tuple));
   }
 
   CUTE_GCC_UNREACHABLE;
@@ -672,9 +664,7 @@ CUTE_HOST_DEVICE constexpr
 auto
 construct(T const& t, X const& x, seq<I...>, seq<J...>, seq<K...>)
 {
-  return cute::make_tuple(detail::tuple_get<I>(t)...,
-                          (void(J),x)...,
-                          detail::tuple_get<K>(t)...);
+  return cute::make_tuple(get<I>(t)..., (void(J),x)..., get<K>(t)...);
 }
 
 } // end namespace detail
@@ -909,7 +899,7 @@ auto
 iscan(T const& t, V const& v, F&& f, seq<I,Is...>)
 {
   // Apply the function to v and the element at I
-  auto v_next = f(v, detail::tuple_get<I>(t));
+  auto v_next = f(v, get<I>(t));
   // Replace I with v_next
   auto t_next = replace<I>(t, v_next);
 
@@ -956,7 +946,7 @@ escan(T const& t, V const& v, F&& f, seq<I,Is...>)
     return replace<I>(t, v);
   } else {
     // Apply the function to v and the element at I
-    auto v_next = f(v, detail::tuple_get<I>(t));
+    auto v_next = f(v, get<I>(t));
     // Replace I with v
     auto t_next = replace<I>(t, v);
 
@@ -999,7 +989,7 @@ CUTE_HOST_DEVICE constexpr
 auto
 zip_(Ts const&... ts)
 {
-  return cute::make_tuple(detail::tuple_get<J>(ts)...);
+  return cute::make_tuple(get<J>(ts)...);
 }
 
 template <class T, int... Is, int... Js>
@@ -1008,7 +998,7 @@ auto
 zip(T const& t, seq<Is...>, seq<Js...>)
 {
   static_assert(conjunction<bool_constant<tuple_size<tuple_element_t<0,T>>::value == tuple_size<tuple_element_t<Is,T>>::value>...>::value, "Mismatched Ranks");
-  return cute::make_tuple(zip_<Js>(detail::tuple_get<Is>(t)...)...);
+  return cute::make_tuple(zip_<Js>(get<Is>(t)...)...);
 }
 
 } // end namespace detail
@@ -1055,13 +1045,11 @@ auto
 zip2_by(T const& t, TG const& guide, seq<Is...>, seq<Js...>)
 {
   // zip2_by produces the modes like ((A,a),(B,b),...)
-  auto split = cute::make_tuple(zip2_by(detail::tuple_get<Is>(t),
-                                        detail::tuple_get<Is>(guide))...);
+  auto split = cute::make_tuple(zip2_by(get<Is>(t), get<Is>(guide))...);
 
   // Rearrange and append missing modes from t to make ((A,B,...),(a,b,...,x,y))
-  return cute::make_tuple(cute::make_tuple(detail::tuple_get<0>(detail::tuple_get<Is>(split))...),
-                          cute::make_tuple(detail::tuple_get<1>(detail::tuple_get<Is>(split))...,
-                                          detail::tuple_get<Js>(t)...));
+  return cute::make_tuple(cute::make_tuple(get<0>(get<Is>(split))...),
+                          cute::make_tuple(get<1>(get<Is>(split))..., get<Js>(t)...));
 }
 
 } // end namespace detail
