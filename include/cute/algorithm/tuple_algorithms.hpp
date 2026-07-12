@@ -122,8 +122,21 @@ CUTE_HOST_DEVICE constexpr
 auto
 tapply(T0&& t0, T1&& t1, F&& f, G&& g, seq<I...>)
 {
-  return g(f(get<I>(static_cast<T0&&>(t0)),
-             get<I>(static_cast<T1&&>(t1)))...);
+  constexpr bool t0_is_integer_sequence = is_integer_sequence<remove_cvref_t<T0>>::value;
+  constexpr bool t1_is_integer_sequence = is_integer_sequence<remove_cvref_t<T1>>::value;
+  if constexpr (t0_is_integer_sequence && t1_is_integer_sequence) {
+    return g(f(cute::get<I>(static_cast<T0&&>(t0)),
+               cute::get<I>(static_cast<T1&&>(t1)))...);
+  } else if constexpr (t0_is_integer_sequence) {
+    return g(f(cute::get<I>(static_cast<T0&&>(t0)),
+               get<I>(static_cast<T1&&>(t1)))...);
+  } else if constexpr (t1_is_integer_sequence) {
+    return g(f(get<I>(static_cast<T0&&>(t0)),
+               cute::get<I>(static_cast<T1&&>(t1)))...);
+  } else {
+    return g(f(get<I>(static_cast<T0&&>(t0)),
+               get<I>(static_cast<T1&&>(t1)))...);
+  }
 }
 
 template <class T0, class T1, class T2, class F, class G, int... I>
@@ -131,9 +144,42 @@ CUTE_HOST_DEVICE constexpr
 auto
 tapply(T0&& t0, T1&& t1, T2&& t2, F&& f, G&& g, seq<I...>)
 {
-  return g(f(get<I>(static_cast<T0&&>(t0)),
-             get<I>(static_cast<T1&&>(t1)),
-             get<I>(static_cast<T2&&>(t2)))...);
+  constexpr bool t0_is_integer_sequence = is_integer_sequence<remove_cvref_t<T0>>::value;
+  constexpr bool t1_is_integer_sequence = is_integer_sequence<remove_cvref_t<T1>>::value;
+  constexpr bool t2_is_integer_sequence = is_integer_sequence<remove_cvref_t<T2>>::value;
+  if constexpr (t0_is_integer_sequence && t1_is_integer_sequence && t2_is_integer_sequence) {
+    return g(f(cute::get<I>(static_cast<T0&&>(t0)),
+               cute::get<I>(static_cast<T1&&>(t1)),
+               cute::get<I>(static_cast<T2&&>(t2)))...);
+  } else if constexpr (t0_is_integer_sequence && t1_is_integer_sequence) {
+    return g(f(cute::get<I>(static_cast<T0&&>(t0)),
+               cute::get<I>(static_cast<T1&&>(t1)),
+               get<I>(static_cast<T2&&>(t2)))...);
+  } else if constexpr (t0_is_integer_sequence && t2_is_integer_sequence) {
+    return g(f(cute::get<I>(static_cast<T0&&>(t0)),
+               get<I>(static_cast<T1&&>(t1)),
+               cute::get<I>(static_cast<T2&&>(t2)))...);
+  } else if constexpr (t1_is_integer_sequence && t2_is_integer_sequence) {
+    return g(f(get<I>(static_cast<T0&&>(t0)),
+               cute::get<I>(static_cast<T1&&>(t1)),
+               cute::get<I>(static_cast<T2&&>(t2)))...);
+  } else if constexpr (t0_is_integer_sequence) {
+    return g(f(cute::get<I>(static_cast<T0&&>(t0)),
+               get<I>(static_cast<T1&&>(t1)),
+               get<I>(static_cast<T2&&>(t2)))...);
+  } else if constexpr (t1_is_integer_sequence) {
+    return g(f(get<I>(static_cast<T0&&>(t0)),
+               cute::get<I>(static_cast<T1&&>(t1)),
+               get<I>(static_cast<T2&&>(t2)))...);
+  } else if constexpr (t2_is_integer_sequence) {
+    return g(f(get<I>(static_cast<T0&&>(t0)),
+               get<I>(static_cast<T1&&>(t1)),
+               cute::get<I>(static_cast<T2&&>(t2)))...);
+  } else {
+    return g(f(get<I>(static_cast<T0&&>(t0)),
+               get<I>(static_cast<T1&&>(t1)),
+               get<I>(static_cast<T2&&>(t2)))...);
+  }
 }
 
 } // end namespace detail

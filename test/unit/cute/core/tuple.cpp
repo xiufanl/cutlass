@@ -41,6 +41,31 @@
 #include <cute/algorithm/tuple_algorithms.hpp>
 #include <cute/tensor.hpp>
 
+TEST(CuTe_core, IntegerSequenceTransformApply)
+{
+  using seq0 = cute::int_sequence<1, 2, 3>;
+  using seq1 = cute::int_sequence<4, 5, 6>;
+  using seq2 = cute::int_sequence<7, 8, 9>;
+
+  auto pairwise = cute::transform_apply(
+      seq0{}, seq1{},
+      [](auto x, auto y) { return decltype(x)::value + decltype(y)::value; },
+      [](auto... values) { return cute::make_tuple(values...); });
+  EXPECT_EQ(cute::get<0>(pairwise), 5);
+  EXPECT_EQ(cute::get<1>(pairwise), 7);
+  EXPECT_EQ(cute::get<2>(pairwise), 9);
+
+  auto three_way = cute::transform_apply(
+      seq0{}, seq1{}, seq2{},
+      [](auto x, auto y, auto z) {
+        return decltype(x)::value + decltype(y)::value + decltype(z)::value;
+      },
+      [](auto... values) { return cute::make_tuple(values...); });
+  EXPECT_EQ(cute::get<0>(three_way), 12);
+  EXPECT_EQ(cute::get<1>(three_way), 15);
+  EXPECT_EQ(cute::get<2>(three_way), 18);
+}
+
 TEST(CuTe_core, Tuple)
 {
   using namespace cute;
