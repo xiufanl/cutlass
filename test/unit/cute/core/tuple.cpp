@@ -64,6 +64,16 @@ TEST(CuTe_core, IntegerSequenceTransformApply)
   EXPECT_EQ(cute::get<0>(three_way), 12);
   EXPECT_EQ(cute::get<1>(three_way), 15);
   EXPECT_EQ(cute::get<2>(three_way), 18);
+
+  auto sum = cute::fold(
+      seq0{}, 0,
+      [](auto accumulated, auto value) { return accumulated + decltype(value)::value; });
+  EXPECT_EQ(sum, 6);
+
+  auto sum_without_identity = cute::fold_first(
+      seq0{},
+      [](auto accumulated, auto value) { return int(accumulated) + int(value); });
+  EXPECT_EQ(sum_without_identity, 6);
 }
 
 TEST(CuTe_core, Tuple)

@@ -471,7 +471,11 @@ CUTE_HOST_DEVICE constexpr
 auto
 fold(T&& t, V const& v, F&& f, seq<Is...>)
 {
-  return (FoldAdaptor<F,V>{f,v} | ... | get<Is>(static_cast<T&&>(t))).val_;
+  if constexpr (is_integer_sequence<remove_cvref_t<T>>::value) {
+    return (FoldAdaptor<F,V>{f,v} | ... | cute::get<Is>(static_cast<T&&>(t))).val_;
+  } else {
+    return (FoldAdaptor<F,V>{f,v} | ... | get<Is>(static_cast<T&&>(t))).val_;
+  }
 }
 
 } // end namespace detail
@@ -496,7 +500,11 @@ auto
 fold_first(T&& t, F&& f)
 {
   if constexpr (is_tuple<remove_cvref_t<T>>::value) {
-    return detail::fold(static_cast<T&&>(t), get<0>(t), f, make_range<1,tuple_size<remove_cvref_t<T>>::value>{});
+    if constexpr (detail::is_integer_sequence<remove_cvref_t<T>>::value) {
+      return detail::fold(static_cast<T&&>(t), cute::get<0>(t), f, make_range<1,tuple_size<remove_cvref_t<T>>::value>{});
+    } else {
+      return detail::fold(static_cast<T&&>(t), get<0>(t), f, make_range<1,tuple_size<remove_cvref_t<T>>::value>{});
+    }
   } else {
     return t;
   }
