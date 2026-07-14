@@ -1,6 +1,4 @@
-#################################################################################################
-#
-# Copyright (c) 2023 - 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2025 - 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: BSD-3-Clause
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,20 +25,6 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-#################################################################################################
 
-from setuptools import setup
-
-
-def perform_setup():
-    setup(
-        name='cutlass_library',
-        version='4.6.1',
-        description='CUTLASS library generation scripts',
-        packages=['cutlass_library']
-    )
-
-
-if __name__ == '__main__':
-    perform_setup()
+def pytest_configure(config):
+    config.default_SMs[__file__] = "103f"
